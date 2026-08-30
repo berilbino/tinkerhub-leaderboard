@@ -1,0 +1,3 @@
+-- Intentionally empty: this is a clean production system, not a demo.
+-- Admins create every leaderboard, participant, access code, weekly round, and
+-- score through the admin portal. Do not add sample names or sample scores here.
