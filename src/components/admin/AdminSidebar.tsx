@@ -38,8 +38,18 @@ export function AdminSidebar({ currentLeaderboardId, activeTab, onTabSelect }: A
   ...
 }
   const navItems = [
-    { label: 'Dashboard', href: currentLeaderboardId ? `${baseUrl}?tab=overview` : '/admin', icon: LayoutDashboard, tab: 'overview' as const },
-    { label: 'Leaderboards', href: currentLeaderboardId ? `${baseUrl}?tab=overview` : '/admin', icon: Trophy, tab: 'overview' as const },
+  {
+    label: 'Dashboard',
+    href: '/admin',
+    icon: LayoutDashboard,
+    tab: 'overview' as const,
+  },
+  {
+    label: 'Leaderboards',
+    href: '/admin',
+    icon: Trophy,
+    tab: 'overview' as const,
+  },
     { 
       label: 'Participants', 
       href: currentLeaderboardId ? `${baseUrl}?tab=participants` : '/admin', 
