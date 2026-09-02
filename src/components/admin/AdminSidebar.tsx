@@ -30,8 +30,13 @@ export function AdminSidebar({ currentLeaderboardId, activeTab, onTabSelect }: A
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const baseUrl = currentLeaderboardId ? `/admin/leaderboards/${currentLeaderboardId}` : '/admin';
-
+  {
+  label: 'Dashboard',
+  href: currentLeaderboardId
+    ? `${baseUrl}?tab=overview`
+    : '/admin',
+  ...
+}
   const navItems = [
     { label: 'Dashboard', href: currentLeaderboardId ? `${baseUrl}?tab=overview` : '/admin', icon: LayoutDashboard, tab: 'overview' as const },
     { label: 'Leaderboards', href: currentLeaderboardId ? `${baseUrl}?tab=overview` : '/admin', icon: Trophy, tab: 'overview' as const },
