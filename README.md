@@ -37,7 +37,10 @@ Open [http://localhost:3000](http://localhost:3000), select **Admin Portal**, an
 1. Go to [supabase.com](https://supabase.com) and create a new project.
 2. Open the **SQL Editor** in your Supabase dashboard.
 3. Copy the contents of [`supabase/schema.sql`](supabase/schema.sql) and run it to create tables, indexes, and Row Level Security (RLS) policies.
-4. Do not run the seed file: it is intentionally empty.
+4. For a new database, run `supabase/schema.sql`. If your Supabase project
+   already has leaderboard and participant rows, run
+   `supabase/migrate-existing-data.sql` instead. It preserves all existing
+   rows and does not add demo data.
 
 ### 2. Configure Environment Variables
 Create a `.env.local` file:

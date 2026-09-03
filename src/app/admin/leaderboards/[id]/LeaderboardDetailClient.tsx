@@ -269,10 +269,13 @@ export function LeaderboardDetailClient({
     <div className="min-h-screen bg-[#FAF9F5] flex flex-col md:flex-row text-[#111111]">
       <AdminSidebar
         currentLeaderboardId={leaderboard.id}
+        currentLeaderboardSlug={leaderboard.slug}
         activeTab={currentTab}
         onTabSelect={(tab) => {
           setCurrentTab(tab);
-          router.replace(`/admin/leaderboards/${leaderboard.id}?tab=${tab}`, { scroll: false });
+          // Keep the browser URL readable. The UUID remains an internal database
+          // key and is still used for all admin API calls.
+          router.replace(`/admin/leaderboards/${leaderboard.slug}?tab=${tab}`, { scroll: false });
         }}
       />
 

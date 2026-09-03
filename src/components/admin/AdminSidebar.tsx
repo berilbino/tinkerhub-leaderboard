@@ -21,22 +21,17 @@ type LeaderboardTab = 'overview' | 'participants' | 'rounds' | 'scores' | 'setti
 
 interface AdminSidebarProps {
   currentLeaderboardId?: string;
+  currentLeaderboardSlug?: string;
   activeTab?: LeaderboardTab;
   onTabSelect?: (tab: LeaderboardTab) => void;
 }
 
-export function AdminSidebar({ currentLeaderboardId, activeTab, onTabSelect }: AdminSidebarProps) {
+export function AdminSidebar({ currentLeaderboardId, currentLeaderboardSlug, activeTab, onTabSelect }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  {
-  label: 'Dashboard',
-  href: currentLeaderboardId
-    ? `${baseUrl}?tab=overview`
-    : '/admin',
-  ...
-}
+  const baseUrl = currentLeaderboardSlug ? `/admin/leaderboards/${currentLeaderboardSlug}` : '/admin';
   const navItems = [
   {
     label: 'Dashboard',

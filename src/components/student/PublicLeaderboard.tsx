@@ -109,7 +109,7 @@ export function PublicLeaderboard({ initialData, onRoundChange, onClearSession, 
             <span>Admin View Active</span>
           </div>
           <Link
-            href={`/admin/leaderboards/${data.leaderboard.id}`}
+            href={`/admin/leaderboards/${data.leaderboard.slug}`}
             className="bg-[#111111] text-white px-2.5 py-1 rounded text-[11px] font-extrabold uppercase hover:bg-[#333333] transition-colors"
           >
             Open Score Manager 🛠️
