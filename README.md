@@ -49,6 +49,10 @@ ADMIN_ACCESS_CODE=ADMIN2026
 ADMIN_SESSION_SECRET=a-long-random-secret
 ```
 
+`SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_ACCESS_CODE`, and
+`ADMIN_SESSION_SECRET` are server-only secrets. Do not prefix them with
+`NEXT_PUBLIC_` and do not put them in client-side code.
+
 ### 3. Important security note
 This project uses the server-side `ADMIN_ACCESS_CODE`; it does not use Supabase Auth users. Never expose `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_ACCESS_CODE`, or `ADMIN_SESSION_SECRET` in browser code or GitHub.
 
@@ -58,8 +62,18 @@ This project uses the server-side `ADMIN_ACCESS_CODE`; it does not use Supabase 
 
 1. Push your repository to GitHub / GitLab.
 2. Import the repository in [Vercel](https://vercel.com).
-3. Add the Supabase environment variables in the Vercel project settings.
-4. Click **Deploy**.
+3. In **Settings → Environment Variables**, add all five variables above to
+   **Production** (and Preview too if you test preview URLs). Use the exact
+   names shown above, especially `SUPABASE_SERVICE_ROLE_KEY`.
+4. Redeploy after saving the variables. Vercel applies environment-variable
+   changes only to new deployments.
+5. Open the deployed site, create one test leaderboard, refresh the admin
+   dashboard and home page, and confirm the same board remains visible.
+
+The production app deliberately refuses to use its development-only in-memory
+store when Supabase credentials are missing. A configuration mistake will now
+produce a visible server error rather than pretend to save data and lose it on
+the next serverless request.
 
 ---
 
@@ -69,6 +83,6 @@ This project uses the server-side `ADMIN_ACCESS_CODE`; it does not use Supabase 
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **Database**: Supabase PostgreSQL
-- **Auth**: Supabase Auth (Admin) & Access Code Hashes (Students)
+- **Auth**: Signed admin-session cookie & participant access-code hashes
 - **Icons**: Lucide React
 - **Animations**: Canvas Confetti

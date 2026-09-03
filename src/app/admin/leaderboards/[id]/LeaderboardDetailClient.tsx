@@ -104,14 +104,15 @@ export function LeaderboardDetailClient({
 
   const handlePublishRounds = async (roundIds: string[]) => {
     try {
-      const promises = roundIds.map((id) =>
+      const responses = await Promise.all(roundIds.map((id) =>
         fetch('/api/admin/rounds', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id, published: true }),
         })
-      );
-      await Promise.all(promises);
+      ));
+      const results = await Promise.all(responses.map((response) => response.json()));
+      if (results.some((result) => !result.success)) return false;
       setRounds((prev) => prev.map((r) => (roundIds.includes(r.id) ? { ...r, published: true } : r)));
       return true;
     } catch {

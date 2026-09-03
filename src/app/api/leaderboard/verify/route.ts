@@ -24,21 +24,11 @@ export async function POST(req: NextRequest) {
 
     const viewData = await getLeaderboardViewData(leaderboard.id, 'overall', participant.id);
 
-    const response = NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       participant: { id: participant.id, name: participant.name },
       viewData 
     });
-
-    // Set secure cookie for participant session
-    response.cookies.set(`th_participant_${leaderboard.id}`, participant.id, {
-      httpOnly: false,
-      path: '/',
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      sameSite: 'lax',
-    });
-
-    return response;
   } catch (error) {
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }

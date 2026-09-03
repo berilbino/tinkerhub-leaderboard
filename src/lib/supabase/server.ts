@@ -1,4 +1,4 @@
-import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 
 /**
  * Server-only database client. It is never imported by browser code and uses
@@ -14,10 +14,11 @@ export function createAdminClient() {
 
   if (!supabaseUrl || !serviceRoleKey) return null;
 
-  return createServerClient(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      getAll() { return []; },
-      setAll() {},
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
     },
   });
 }

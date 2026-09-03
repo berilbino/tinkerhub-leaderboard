@@ -7,6 +7,10 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { LeaderboardRibbon, RetroStar } from '@/components/illustrations/VectorIllustrations';
 
+// A leaderboard is created and edited at runtime, so Vercel must always read
+// the current Supabase row instead of reusing a build-time page result.
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }

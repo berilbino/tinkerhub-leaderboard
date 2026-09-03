@@ -69,7 +69,7 @@ export function ScoreTable({
     setFeedbackMessage(null);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (): Promise<boolean> => {
     setIsSaving(true);
     setFeedbackMessage(null);
     try {
@@ -91,11 +91,14 @@ export function ScoreTable({
       if (success) {
         setHasUnsavedChanges(false);
         setFeedbackMessage({ type: 'success', text: 'All score changes saved successfully!' });
+        return true;
       } else {
         setFeedbackMessage({ type: 'error', text: "Couldn't save your changes. Please try again." });
+        return false;
       }
     } catch {
       setFeedbackMessage({ type: 'error', text: 'An unexpected error occurred while saving.' });
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -106,7 +109,8 @@ export function ScoreTable({
     setFeedbackMessage(null);
     try {
       // First save any unsaved scores
-      await handleSave();
+      const scoresSaved = await handleSave();
+      if (!scoresSaved) return;
       // Publish all rounds
       const roundIds = rounds.map((r) => r.id);
       const success = await onPublishRounds(roundIds);

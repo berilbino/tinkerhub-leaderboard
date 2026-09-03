@@ -62,7 +62,7 @@ export function LeaderboardCard({
         {/* Actions */}
         <div className="flex items-center gap-2 mt-4">
           <Link
-            href={`/admin/leaderboards/${leaderboard.id}`}
+            href={`/admin/leaderboards/${leaderboard.slug}`}
             className="bg-white hover:bg-[#FAF9F5] text-[#111111] font-bold text-xs px-4 py-2 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase transition-all retro-btn-active"
           >
             Manage

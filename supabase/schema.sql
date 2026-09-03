@@ -54,6 +54,10 @@ create table if not exists public.rounds (
   updated_at     timestamptz not null default now()
 );
 
+-- A leaderboard has one unambiguous position for each week/round.
+create unique index if not exists rounds_leaderboard_round_order_idx
+  on public.rounds (leaderboard_id, round_order);
+
 -- ──────────────────────────────────────────────────────────────────────────────
 -- 4. SCORES
 -- ──────────────────────────────────────────────────────────────────────────────
@@ -78,15 +82,18 @@ begin
 end;
 $$;
 
-create or replace trigger leaderboards_updated_at
+drop trigger if exists leaderboards_updated_at on public.leaderboards;
+create trigger leaderboards_updated_at
   before update on public.leaderboards
   for each row execute function public.set_updated_at();
 
-create or replace trigger rounds_updated_at
+drop trigger if exists rounds_updated_at on public.rounds;
+create trigger rounds_updated_at
   before update on public.rounds
   for each row execute function public.set_updated_at();
 
-create or replace trigger scores_updated_at
+drop trigger if exists scores_updated_at on public.scores;
+create trigger scores_updated_at
   before update on public.scores
   for each row execute function public.set_updated_at();
 

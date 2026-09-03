@@ -180,16 +180,30 @@ if (process.env.NODE_ENV !== 'production') {
   global.__localStoreInstance = localStore;
 }
 
-function hasSupabaseConfig(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.SUPABASE_SERVICE_ROLE_KEY
+function shouldUseLocalStore(): boolean {
+  // Every database operation in this module runs on the server and authenticates
+  // with the service-role key. The browser anon key is not needed here.
+  const configured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
   );
+
+  if (configured) return false;
+
+  // An in-memory fallback is useful while developing without Supabase, but it
+  // must never be used in a serverless production deployment: each request can
+  // run in a different process and would appear to randomly lose data.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the deployment environment.'
+    );
+  }
+
+  return true;
 }
 
 // Public API
 export async function getLeaderboards(): Promise<Leaderboard[]> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.getLeaderboards();
   }
   const supabase = await createServerSupabaseClient();
@@ -201,7 +215,7 @@ export async function getLeaderboards(): Promise<Leaderboard[]> {
 }
 
 export async function getLeaderboardBySlug(slug: string): Promise<Leaderboard | null> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.getLeaderboardBySlug(slug);
   }
   const supabase = await createServerSupabaseClient();
@@ -212,7 +226,7 @@ export async function getLeaderboardBySlug(slug: string): Promise<Leaderboard | 
 }
 
 export async function getLeaderboardById(id: string): Promise<Leaderboard | null> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.getLeaderboardById(id);
   }
   const supabase = await createServerSupabaseClient();
@@ -223,7 +237,7 @@ export async function getLeaderboardById(id: string): Promise<Leaderboard | null
 }
 
 export async function createLeaderboard(data: { title: string; subtitle?: string | null; slug: string; illustration_key?: string }): Promise<Leaderboard> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.createLeaderboard(data);
   }
   const supabase = createAdminClient();
@@ -240,7 +254,7 @@ export async function createLeaderboard(data: { title: string; subtitle?: string
 }
 
 export async function updateLeaderboard(id: string, data: Partial<Leaderboard>): Promise<Leaderboard | null> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.updateLeaderboard(id, data);
   }
   const supabase = createAdminClient();
@@ -251,7 +265,7 @@ export async function updateLeaderboard(id: string, data: Partial<Leaderboard>):
 }
 
 export async function deleteLeaderboard(id: string): Promise<boolean> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.deleteLeaderboard(id);
   }
   const supabase = createAdminClient();
@@ -261,7 +275,7 @@ export async function deleteLeaderboard(id: string): Promise<boolean> {
 }
 
 export async function getParticipants(leaderboardId: string): Promise<Participant[]> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.getParticipants(leaderboardId);
   }
   const supabase = await createServerSupabaseClient();
@@ -278,7 +292,7 @@ export async function addParticipant(leaderboardId: string, name: string): Promi
   const accessCode = generateAccessCode(prefix, 5);
   const access_code_hash = await hashAccessCode(accessCode);
 
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.addParticipant(leaderboardId, name);
   }
   const supabase = createAdminClient();
@@ -294,7 +308,7 @@ export async function addParticipant(leaderboardId: string, name: string): Promi
 }
 
 export async function updateParticipant(id: string, name: string): Promise<Participant | null> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.updateParticipant(id, name);
   }
   const supabase = createAdminClient();
@@ -305,7 +319,7 @@ export async function updateParticipant(id: string, name: string): Promise<Parti
 }
 
 export async function deleteParticipant(id: string): Promise<boolean> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.deleteParticipant(id);
   }
   const supabase = createAdminClient();
@@ -315,7 +329,7 @@ export async function deleteParticipant(id: string): Promise<boolean> {
 }
 
 export async function getRounds(leaderboardId: string): Promise<Round[]> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.getRounds(leaderboardId);
   }
   const supabase = await createServerSupabaseClient();
@@ -326,7 +340,7 @@ export async function getRounds(leaderboardId: string): Promise<Round[]> {
 }
 
 export async function addRound(leaderboardId: string, name: string, maxScore?: number | null): Promise<Round> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.addRound(leaderboardId, name, maxScore);
   }
   const supabase = createAdminClient();
@@ -344,7 +358,7 @@ export async function addRound(leaderboardId: string, name: string, maxScore?: n
 }
 
 export async function updateRound(id: string, data: Partial<Round>): Promise<Round | null> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.updateRound(id, data);
   }
   const supabase = createAdminClient();
@@ -355,7 +369,7 @@ export async function updateRound(id: string, data: Partial<Round>): Promise<Rou
 }
 
 export async function deleteRound(id: string): Promise<boolean> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.deleteRound(id);
   }
   const supabase = createAdminClient();
@@ -365,7 +379,7 @@ export async function deleteRound(id: string): Promise<boolean> {
 }
 
 export async function getScores(leaderboardId: string): Promise<Score[]> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.getScores(leaderboardId);
   }
   const rounds = await getRounds(leaderboardId);
@@ -379,7 +393,7 @@ export async function getScores(leaderboardId: string): Promise<Score[]> {
 }
 
 export async function saveScores(scoresToSave: { participant_id: string; round_id: string; score: number }[]): Promise<boolean> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.saveScores(scoresToSave);
   }
   const supabase = createAdminClient();
@@ -397,7 +411,7 @@ export async function saveScores(scoresToSave: { participant_id: string; round_i
 }
 
 export async function validateAccessCode(leaderboardId: string, rawCode: string): Promise<Participant | null> {
-  if (!hasSupabaseConfig()) {
+  if (shouldUseLocalStore()) {
     return localStore.validateAccessCode(leaderboardId, rawCode);
   }
   const normalized = normalizeAccessCode(rawCode);

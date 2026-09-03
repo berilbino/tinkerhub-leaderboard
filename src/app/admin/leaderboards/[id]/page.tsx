@@ -1,5 +1,6 @@
 import React from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { 
   getLeaderboardById, 
   getLeaderboardBySlug, 
@@ -7,6 +8,7 @@ import {
   getRounds, 
   getScores 
 } from '@/lib/data/store';
+import { isValidAdminSession } from '@/lib/utils/adminSession';
 import { LeaderboardDetailClient } from './LeaderboardDetailClient';
 
 interface PageProps {
@@ -14,11 +16,18 @@ interface PageProps {
 }
 
 export default async function AdminLeaderboardDetailPage({ params }: PageProps) {
+  const cookieStore = await cookies();
+  if (!isValidAdminSession(cookieStore.get('th_admin_session')?.value)) {
+    redirect('/admin/login');
+  }
+
   const { id } = await params;
   
-  let leaderboard = await getLeaderboardById(id);
+  // Use the stable public slug first. Existing UUID-based admin links remain
+  // supported as a fallback.
+  let leaderboard = await getLeaderboardBySlug(id);
   if (!leaderboard) {
-    leaderboard = await getLeaderboardBySlug(id);
+    leaderboard = await getLeaderboardById(id);
   }
 
   if (!leaderboard) {
