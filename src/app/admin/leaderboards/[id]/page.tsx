@@ -1,5 +1,5 @@
 import React from 'react';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { 
   getLeaderboardById, 
@@ -17,21 +17,24 @@ interface PageProps {
 
 export default async function AdminLeaderboardDetailPage({ params }: PageProps) {
   const cookieStore = await cookies();
-  if (!isValidAdminSession(cookieStore.get('th_admin_session')?.value)) {
+  const sessionValue = cookieStore.get('th_admin_session')?.value;
+
+  // If session secret is not configured or session is invalid, redirect to login
+  if (!sessionValue || !isValidAdminSession(sessionValue)) {
     redirect('/admin/login');
   }
 
   const { id } = await params;
-  
-  // Use the stable public slug first. Existing UUID-based admin links remain
-  // supported as a fallback.
+
+  // Try slug first, then UUID — supports both URL formats
   let leaderboard = await getLeaderboardBySlug(id);
   if (!leaderboard) {
     leaderboard = await getLeaderboardById(id);
   }
 
+  // If leaderboard not found (e.g. deleted), go back to admin dashboard
   if (!leaderboard) {
-    notFound();
+    redirect('/admin');
   }
 
   const [participants, rounds, scores] = await Promise.all([
