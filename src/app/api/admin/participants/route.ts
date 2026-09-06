@@ -1,20 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { addParticipant, updateParticipant, deleteParticipant } from '@/lib/data/store';
+import { addParticipant, addParticipantsBulk, updateParticipant, deleteParticipant } from '@/lib/data/store';
 import { requireAdmin } from '@/lib/utils/requireAdmin';
 
 export async function POST(req: NextRequest) {
   const unauthorized = requireAdmin(req);
   if (unauthorized) return unauthorized;
   try {
-    const { leaderboardId, name } = await req.json();
-    if (!leaderboardId || !name) {
-      return NextResponse.json({ success: false, error: 'leaderboardId and name are required' }, { status: 400 });
+    const body = await req.json();
+    const { leaderboardId, name, names } = body;
+
+    if (!leaderboardId) {
+      return NextResponse.json({ success: false, error: 'leaderboardId is required' }, { status: 400 });
+    }
+
+    // Bulk mode
+    if (Array.isArray(names)) {
+      const result = await addParticipantsBulk(leaderboardId, names);
+      return NextResponse.json({ success: true, ...result });
+    }
+
+    // Single participant mode
+    if (!name) {
+      return NextResponse.json({ success: false, error: 'name or names array is required' }, { status: 400 });
     }
 
     const result = await addParticipant(leaderboardId, name);
     return NextResponse.json({ success: true, ...result });
-  } catch (error) {
-    return NextResponse.json({ success: false, error: 'Failed to add participant' }, { status: 500 });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Failed to add participant';
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
 

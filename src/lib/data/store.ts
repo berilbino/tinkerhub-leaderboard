@@ -79,6 +79,29 @@ class LocalStore {
     return { participant: newParticipant, accessCode };
   }
 
+  async addParticipantsBulk(leaderboardId: string, names: string[]): Promise<{ added: { participant: Participant; accessCode: string }[]; skipped: string[] }> {
+    const added: { participant: Participant; accessCode: string }[] = [];
+    const skipped: string[] = [];
+    const existingNames = new Set(
+      this.participants
+        .filter((p) => p.leaderboard_id === leaderboardId)
+        .map((p) => p.name.toLowerCase())
+    );
+
+    for (const rawName of names) {
+      const name = rawName.trim();
+      if (!name || existingNames.has(name.toLowerCase())) {
+        if (name) skipped.push(name);
+        continue;
+      }
+      existingNames.add(name.toLowerCase());
+      const res = await this.addParticipant(leaderboardId, name);
+      added.push(res);
+    }
+
+    return { added, skipped };
+  }
+
   updateParticipant(id: string, name: string): Participant | null {
     const p = this.participants.find((item) => item.id === id);
     if (!p) return null;
@@ -305,6 +328,80 @@ export async function addParticipant(leaderboardId: string, name: string): Promi
   }).select().single();
   if (error || !data) throw new Error(error?.message || 'Failed to add participant');
   return { participant: data as Participant, accessCode };
+}
+
+export async function addParticipantsBulk(
+  leaderboardId: string, 
+  names: string[]
+): Promise<{ added: { participant: Participant; accessCode: string }[]; skipped: string[] }> {
+  if (shouldUseLocalStore()) {
+    return localStore.addParticipantsBulk(leaderboardId, names);
+  }
+
+  const leaderboard = await getLeaderboardById(leaderboardId);
+  if (!leaderboard) throw new Error('Leaderboard not found');
+
+  const supabase = createAdminClient();
+  if (!supabase) throw new Error('Supabase service-role credentials are not configured');
+
+  // Fetch existing participants to avoid duplicates
+  const existing = await getParticipants(leaderboardId);
+  const existingNames = new Set(existing.map((p) => p.name.trim().toLowerCase()));
+
+  const prefix = leaderboard.slug.replace(/[^a-z0-9]/gi, '').slice(0, 6).toUpperCase() || 'TH';
+  const added: { participant: Participant; accessCode: string }[] = [];
+  const skipped: string[] = [];
+  const rowsToInsert: {
+    leaderboard_id: string;
+    name: string;
+    access_code_hash: string;
+    access_code_hint: string;
+  }[] = [];
+  const codeMap = new Map<string, string>(); // name -> code
+
+  for (const raw of names) {
+    const name = raw.trim();
+    if (!name) continue;
+    if (existingNames.has(name.toLowerCase())) {
+      skipped.push(name);
+      continue;
+    }
+    // Prevent duplicate within the same batch
+    existingNames.add(name.toLowerCase());
+
+    const accessCode = generateAccessCode(prefix, 5);
+    const access_code_hash = await hashAccessCode(accessCode);
+    codeMap.set(name, accessCode);
+    rowsToInsert.push({
+      leaderboard_id: leaderboardId,
+      name,
+      access_code_hash,
+      access_code_hint: accessCode,
+    });
+  }
+
+  if (rowsToInsert.length === 0) {
+    return { added: [], skipped };
+  }
+
+  // Batch insert into Supabase
+  const { data, error } = await supabase
+    .from('participants')
+    .insert(rowsToInsert)
+    .select();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Failed to bulk insert participants');
+  }
+
+  for (const p of data as Participant[]) {
+    added.push({
+      participant: p,
+      accessCode: p.access_code_hint || codeMap.get(p.name) || '',
+    });
+  }
+
+  return { added, skipped };
 }
 
 export async function updateParticipant(id: string, name: string): Promise<Participant | null> {

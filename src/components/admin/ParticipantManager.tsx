@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Participant } from '@/types/leaderboard';
 import { 
   Plus, 
@@ -12,13 +12,17 @@ import {
   Download, 
   X, 
   CheckCircle2, 
-  Sparkles 
+  Sparkles,
+  Upload,
+  FileText,
+  AlertCircle
 } from 'lucide-react';
 
 interface ParticipantManagerProps {
   leaderboardId: string;
   participants: Participant[];
   onAddParticipant: (name: string) => Promise<{ participant: Participant; accessCode: string } | null>;
+  onAddParticipantsBulk?: (names: string[]) => Promise<{ added: { participant: Participant; accessCode: string }[]; skipped: string[] } | null>;
   onUpdateParticipant: (id: string, name: string) => Promise<boolean>;
   onDeleteParticipant: (id: string) => Promise<boolean>;
 }
@@ -27,6 +31,7 @@ export function ParticipantManager({
   leaderboardId,
   participants,
   onAddParticipant,
+  onAddParticipantsBulk,
   onUpdateParticipant,
   onDeleteParticipant,
 }: ParticipantManagerProps) {
@@ -39,6 +44,16 @@ export function ParticipantManager({
   const [newName, setNewName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newlyCreatedCode, setNewlyCreatedCode] = useState<string | null>(null);
+
+  // Bulk Add Modal State
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkText, setBulkText] = useState('');
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{
+    added: { participant: Participant; accessCode: string }[];
+    skipped: string[];
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Edit Participant Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -85,6 +100,50 @@ export function ParticipantManager({
     }
   };
 
+  // Bulk submit handler
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!onAddParticipantsBulk) return;
+
+    // Parse names from lines / commas
+    const parsedNames = bulkText
+      .split(/\r?\n|,/)
+      .map((n) => n.trim())
+      .filter(Boolean);
+
+    if (parsedNames.length === 0) return;
+
+    setIsBulkAdding(true);
+    try {
+      const res = await onAddParticipantsBulk(parsedNames);
+      if (res) {
+        setBulkResult(res);
+        setBulkText('');
+      }
+    } finally {
+      setIsBulkAdding(false);
+    }
+  };
+
+  // File upload handler (.txt or .csv)
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+      // Append or replace
+      setBulkText((prev) => (prev.trim() ? `${prev.trim()}\n${content}` : content));
+    };
+    reader.readAsText(file);
+    // Reset file input value so user can upload again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingParticipant || !editName.trim()) return;
@@ -125,18 +184,33 @@ export function ParticipantManager({
           </p>
         </div>
 
-        {/* Action Button */}
-        <button
-          type="button"
-          onClick={() => {
-            setNewlyCreatedCode(null);
-            setAddModalOpen(true);
-          }}
-          className="bg-[#D91E2E] hover:bg-[#A91421] text-white font-bold text-xs px-4 py-2 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase flex items-center gap-1.5 transition-all retro-btn-active cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Add Participant</span>
-        </button>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => {
+              setBulkResult(null);
+              setBulkText('');
+              setBulkModalOpen(true);
+            }}
+            className="bg-white hover:bg-[#FAF9F5] text-[#111111] font-bold text-xs px-3.5 py-2 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase flex items-center gap-1.5 transition-all retro-btn-active cursor-pointer"
+          >
+            <Upload className="w-3.5 h-3.5 text-[#D91E2E]" />
+            <span>Bulk Import (Text / Excel)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setNewlyCreatedCode(null);
+              setAddModalOpen(true);
+            }}
+            className="bg-[#D91E2E] hover:bg-[#A91421] text-white font-bold text-xs px-3.5 py-2 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase flex items-center gap-1.5 transition-all retro-btn-active cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Participant</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -392,6 +466,163 @@ export function ParticipantManager({
                 <span>{isUpdating ? 'Saving...' : 'Save Changes'}</span>
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Add Modal */}
+      {bulkModalOpen && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white border-2 border-[#111111] rounded-lg max-w-lg w-full p-6 retro-shadow relative max-h-[90vh] overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setBulkModalOpen(false);
+                setBulkResult(null);
+              }}
+              className="absolute top-4 right-4 p-1 text-[#666666] hover:text-[#111111]"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-1">
+              <Upload className="w-5 h-5 text-[#D91E2E]" />
+              <h3 className="font-display text-lg text-[#111111] uppercase">
+                Bulk Import Participants
+              </h3>
+            </div>
+            <p className="text-xs text-[#666666] mb-4">
+              Add 80+ participants at once. Paste student names (one per line or comma-separated), or upload a <span className="font-bold text-[#111111]">.txt / .csv</span> file.
+            </p>
+
+            {bulkResult ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-[#DCFCE7] border border-[#86EFAC] rounded-md">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="w-5 h-5 text-[#166534]" />
+                    <p className="text-xs font-bold text-[#166534] uppercase">
+                      Bulk Import Complete!
+                    </p>
+                  </div>
+                  <p className="text-xs text-[#166534]">
+                    Successfully added <span className="font-bold text-sm">{bulkResult.added.length}</span> participants with generated access codes.
+                  </p>
+                  {bulkResult.skipped.length > 0 && (
+                    <p className="text-[11px] text-[#854D0E] mt-2 bg-[#FEF9C3] p-2 rounded border border-[#FDE047]">
+                      ⚠️ Skipped {bulkResult.skipped.length} duplicate/blank names: {bulkResult.skipped.slice(0, 5).join(', ')}{bulkResult.skipped.length > 5 ? '...' : ''}
+                    </p>
+                  )}
+                </div>
+
+                <div className="max-h-48 overflow-y-auto bg-[#FAF9F5] border border-[#D9D9D4] rounded p-3 text-xs space-y-1">
+                  <p className="font-bold text-[#111111] text-[11px] uppercase pb-1 border-b border-[#EBEBE6]">
+                    Added Participants & Codes:
+                  </p>
+                  {bulkResult.added.map((item) => (
+                    <div key={item.participant.id} className="flex items-center justify-between py-0.5 font-mono text-[11px]">
+                      <span className="font-sans font-bold text-[#111111]">{item.participant.name}</span>
+                      <span className="text-[#D91E2E] font-bold">{item.accessCode}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const text = bulkResult.added
+                        .map((item) => `${item.participant.name}: ${item.accessCode}`)
+                        .join('\n');
+                      navigator.clipboard.writeText(text);
+                      alert('Copied new participant codes to clipboard!');
+                    }}
+                    className="flex-1 bg-[#111111] hover:bg-[#333333] text-white font-bold text-xs py-2.5 rounded uppercase flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Newly Created Codes</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBulkResult(null);
+                      setBulkModalOpen(false);
+                    }}
+                    className="bg-[#D91E2E] hover:bg-[#A91421] text-white font-bold text-xs py-2.5 px-4 rounded uppercase cursor-pointer"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleBulkSubmit} className="space-y-4">
+                {/* File Upload Helper Box */}
+                <div className="p-3 bg-[#FAF9F5] border-2 border-dashed border-[#D9D9D4] rounded-md text-center hover:border-[#111111] transition-colors">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,.csv"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="bulk-file-upload"
+                  />
+                  <label
+                    htmlFor="bulk-file-upload"
+                    className="cursor-pointer flex flex-col items-center justify-center gap-1"
+                  >
+                    <FileText className="w-6 h-6 text-[#666666]" />
+                    <span className="text-xs font-bold text-[#111111] hover:underline">
+                      Click to choose a .txt or .csv file
+                    </span>
+                    <span className="text-[10px] text-[#888888]">
+                      Exported from Excel or a simple notepad list
+                    </span>
+                  </label>
+                </div>
+
+                <div className="text-center text-[10px] font-bold text-[#999999] uppercase tracking-wider">
+                  — or paste names directly below —
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-[#111111] uppercase">
+                      Student Names (One per line)
+                    </label>
+                    <span className="text-[10px] text-[#666666] font-medium">
+                      {bulkText.split(/\r?\n|,/).filter((s) => s.trim().length > 0).length} names detected
+                    </span>
+                  </div>
+                  <textarea
+                    rows={8}
+                    required
+                    value={bulkText}
+                    onChange={(e) => setBulkText(e.target.value)}
+                    placeholder={`Rahul Nair\nAnanya Sharma\nVishnu Prasad\nDevika Menon\nAlex Joseph`}
+                    className="w-full py-2 px-3 bg-white border-2 border-[#D9D9D4] rounded-md text-xs font-medium font-mono text-[#111111] focus:border-[#111111] focus:outline-none"
+                  />
+                </div>
+
+                <div className="bg-[#FEF9C3] p-2.5 rounded border border-[#FDE047] flex items-start gap-2 text-[11px] text-[#854D0E]">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Each student will automatically receive their own unique access code. Duplicate names will be safely ignored.
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isBulkAdding || !bulkText.trim()}
+                  className="w-full bg-[#D91E2E] hover:bg-[#A91421] text-white font-bold text-xs py-2.5 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase flex items-center justify-center gap-1.5 transition-all retro-btn-active cursor-pointer disabled:opacity-50"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>
+                    {isBulkAdding
+                      ? 'Importing Participants...'
+                      : `Import ${bulkText.split(/\r?\n|,/).filter((s) => s.trim().length > 0).length || ''} Participants`}
+                  </span>
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}

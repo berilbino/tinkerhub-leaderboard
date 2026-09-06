@@ -139,6 +139,28 @@ export function LeaderboardDetailClient({
     }
   };
 
+  const handleAddParticipantsBulk = async (names: string[]) => {
+    try {
+      const res = await fetch('/api/admin/participants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leaderboardId: leaderboard.id, names }),
+      });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.added)) {
+        const newParticipants = json.added.map((item: { participant: Participant }) => item.participant);
+        setParticipants((prev) => [...prev, ...newParticipants]);
+        return {
+          added: json.added as { participant: Participant; accessCode: string }[],
+          skipped: (json.skipped || []) as string[],
+        };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
   const handleUpdateParticipant = async (id: string, name: string) => {
     try {
       const res = await fetch('/api/admin/participants', {
@@ -356,6 +378,7 @@ export function LeaderboardDetailClient({
             leaderboardId={leaderboard.id}
             participants={participants}
             onAddParticipant={handleAddParticipant}
+            onAddParticipantsBulk={handleAddParticipantsBulk}
             onUpdateParticipant={handleUpdateParticipant}
             onDeleteParticipant={handleDeleteParticipant}
           />
