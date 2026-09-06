@@ -13,10 +13,12 @@ interface LeaderboardCardProps {
 
 export function LeaderboardCard({
   leaderboard,
-  roundCount = 7,
-  participantCount = 28,
+  roundCount,
+  participantCount,
   onShare,
 }: LeaderboardCardProps) {
+  const actualRoundCount = roundCount !== undefined ? roundCount : (leaderboard.round_count ?? 0);
+  const actualParticipantCount = participantCount !== undefined ? participantCount : (leaderboard.participant_count ?? 0);
   const getStatusBadge = () => {
     switch (leaderboard.status) {
       case 'completed':
@@ -53,7 +55,7 @@ export function LeaderboardCard({
         </div>
 
         <p className="text-xs text-[#666666] font-semibold mb-1">
-          {roundCount} {roundCount === 1 ? 'Round' : 'Rounds'} · {participantCount} Participants
+          {actualRoundCount} {actualRoundCount === 1 ? 'Round' : 'Rounds'} · {actualParticipantCount} {actualParticipantCount === 1 ? 'Participant' : 'Participants'}
         </p>
         <p className="text-[11px] text-[#999999]">
           Slug: <span className="font-mono text-[#111111]">/leaderboard/{leaderboard.slug}</span>

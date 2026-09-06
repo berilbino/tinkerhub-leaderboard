@@ -29,6 +29,8 @@ export interface Leaderboard {
   status: LeaderboardStatus;
   created_at: string;
   updated_at: string;
+  participant_count?: number;
+  round_count?: number;
 }
 
 export interface Participant {

@@ -12,7 +12,13 @@ class LocalStore {
   private scores: Score[] = [...INITIAL_SCORES];
 
   getLeaderboards(): Leaderboard[] {
-    return [...this.leaderboards].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return [...this.leaderboards]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map((board) => ({
+        ...board,
+        participant_count: this.participants.filter((p) => p.leaderboard_id === board.id).length,
+        round_count: this.rounds.filter((r) => r.leaderboard_id === board.id).length,
+      }));
   }
 
   getLeaderboardById(id: string): Leaderboard | null {
@@ -231,10 +237,36 @@ export async function getLeaderboards(): Promise<Leaderboard[]> {
   }
   const supabase = await createServerSupabaseClient();
   if (!supabase) throw new Error('Supabase is configured but the server client could not be created');
-  const { data, error } = await supabase.from('leaderboards').select('*').order('created_at', { ascending: false });
-  if (error) throw new Error(error.message);
-  if (!data) return [];
-  return data as Leaderboard[];
+  
+  // Fetch leaderboards, participants, and rounds to compute exact counts
+  const [{ data: boards, error: boardsErr }, { data: participants, error: partErr }, { data: rounds, error: roundsErr }] = await Promise.all([
+    supabase.from('leaderboards').select('*').order('created_at', { ascending: false }),
+    supabase.from('participants').select('id, leaderboard_id'),
+    supabase.from('rounds').select('id, leaderboard_id'),
+  ]);
+
+  if (boardsErr) throw new Error(boardsErr.message);
+  if (!boards) return [];
+
+  const participantCounts: Record<string, number> = {};
+  if (participants) {
+    for (const p of participants) {
+      participantCounts[p.leaderboard_id] = (participantCounts[p.leaderboard_id] || 0) + 1;
+    }
+  }
+
+  const roundCounts: Record<string, number> = {};
+  if (rounds) {
+    for (const r of rounds) {
+      roundCounts[r.leaderboard_id] = (roundCounts[r.leaderboard_id] || 0) + 1;
+    }
+  }
+
+  return (boards as Leaderboard[]).map((board) => ({
+    ...board,
+    participant_count: participantCounts[board.id] || 0,
+    round_count: roundCounts[board.id] || 0,
+  }));
 }
 
 export async function getLeaderboardBySlug(slug: string): Promise<Leaderboard | null> {

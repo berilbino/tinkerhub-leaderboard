@@ -104,8 +104,8 @@ export default function AdminDashboardPage() {
               <LeaderboardCard
                 key={board.id}
                 leaderboard={board}
-                roundCount={board.slug === 'creative-week-2026' ? 7 : board.slug === 'uiux-design-jam' ? 5 : 4}
-                participantCount={board.slug === 'creative-week-2026' ? 28 : board.slug === 'uiux-design-jam' ? 28 : 15}
+                roundCount={board.round_count}
+                participantCount={board.participant_count}
                 onShare={(l) => setSharingLeaderboard(l)}
               />
             ))}
