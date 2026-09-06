@@ -102,9 +102,27 @@ export function AdminSidebar({ currentLeaderboardId, currentLeaderboardSlug, act
         <nav className="space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentLeaderboardId
-              ? item.tab === activeTab
-              : pathname === '/admin' && item.label === 'Dashboard';
+            let isActive = false;
+
+            if (currentLeaderboardId) {
+              // When managing a leaderboard:
+              // 'Leaderboards' represents the Overview/Dashboard of this specific leaderboard
+              // 'Dashboard' represents returning to the main /admin list
+              if (item.label === 'Leaderboards') {
+                isActive = activeTab === 'overview';
+              } else if (item.label === 'Dashboard') {
+                isActive = false; // Admin Dashboard is the /admin root page
+              } else {
+                isActive = item.tab === activeTab;
+              }
+            } else {
+              // When on main /admin dashboard
+              isActive = pathname === '/admin' && (item.label === 'Dashboard' || item.label === 'Leaderboards');
+              // To avoid highlighting both on /admin too, only highlight Dashboard:
+              if (pathname === '/admin') {
+                isActive = item.label === 'Dashboard';
+              }
+            }
 
             return (
               <Link
@@ -113,6 +131,10 @@ export function AdminSidebar({ currentLeaderboardId, currentLeaderboardSlug, act
                 onClick={(event) => {
                   setMobileOpen(false);
                   if (currentLeaderboardId && onTabSelect) {
+                    if (item.label === 'Dashboard') {
+                      // Navigate back to main admin dashboard
+                      return;
+                    }
                     event.preventDefault();
                     onTabSelect(item.tab);
                   }
