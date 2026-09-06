@@ -492,7 +492,7 @@ export function ParticipantManager({
               </h3>
             </div>
             <p className="text-xs text-[#666666] mb-4">
-              Add 80+ participants at once. Paste student names (one per line or comma-separated), or upload a <span className="font-bold text-[#111111]">.txt / .csv</span> file.
+              Add all participants at once. Paste student names (one per line or comma-separated), or upload a <span className="font-bold text-[#111111]">.txt / .csv</span> file.
             </p>
 
             {bulkResult ? (
