@@ -44,35 +44,47 @@ export function LeaderboardCard({
   };
 
   return (
-    <div className="bg-white border-2 border-[#111111] rounded-lg p-5 retro-shadow transition-all hover:translate-y-[-2px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-      {/* Left Info */}
-      <div className="flex-1">
-        <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
-          <h2 className="font-display text-lg sm:text-xl text-[#111111] uppercase tracking-wide">
-            {leaderboard.title}
-          </h2>
-          {getStatusBadge()}
+    <div className="bg-white border-2 border-[#111111] rounded-lg p-5 retro-shadow transition-all hover:translate-y-[-2px] relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Main Info */}
+      <div className="flex-1 pr-0 sm:pr-4">
+        {/* Top Header Row with Title, Badge, and Mobile Illustration */}
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <h2 className="font-display text-lg sm:text-xl text-[#111111] uppercase tracking-wide">
+                {leaderboard.title}
+              </h2>
+              {getStatusBadge()}
+            </div>
+            <p className="text-xs text-[#666666] font-semibold mb-1">
+              {actualRoundCount} {actualRoundCount === 1 ? 'Round' : 'Rounds'} · {actualParticipantCount} {actualParticipantCount === 1 ? 'Participant' : 'Participants'}
+            </p>
+            <p className="text-[11px] text-[#999999] truncate max-w-[240px] sm:max-w-none">
+              Slug: <span className="font-mono text-[#111111]">/leaderboard/{leaderboard.slug}</span>
+            </p>
+          </div>
+
+          {/* Illustration visible on mobile at top-right */}
+          <div className="sm:hidden flex-shrink-0">
+            <IllustrationRenderer
+              illustrationKey={leaderboard.illustration_key || 'cassette'}
+              className="w-16 h-14 object-contain transform hover:rotate-3 transition-transform"
+            />
+          </div>
         </div>
 
-        <p className="text-xs text-[#666666] font-semibold mb-1">
-          {actualRoundCount} {actualRoundCount === 1 ? 'Round' : 'Rounds'} · {actualParticipantCount} {actualParticipantCount === 1 ? 'Participant' : 'Participants'}
-        </p>
-        <p className="text-[11px] text-[#999999]">
-          Slug: <span className="font-mono text-[#111111]">/leaderboard/{leaderboard.slug}</span>
-        </p>
-
-        {/* Actions */}
-        <div className="flex items-center gap-2 mt-4">
+        {/* Action Buttons (Manage & Share) */}
+        <div className="flex items-center gap-2.5 mt-4 pt-1 sm:pt-0">
           <Link
             href={`/admin/leaderboards/${leaderboard.slug}`}
-            className="bg-white hover:bg-[#FAF9F5] text-[#111111] font-bold text-xs px-4 py-2 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase transition-all retro-btn-active"
+            className="flex-1 sm:flex-none text-center bg-white hover:bg-[#FAF9F5] text-[#111111] font-bold text-xs px-5 py-2.5 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase transition-all retro-btn-active"
           >
             Manage
           </Link>
           <button
             type="button"
             onClick={() => onShare(leaderboard)}
-            className="bg-[#D91E2E] hover:bg-[#A91421] text-white font-bold text-xs px-4 py-2 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase flex items-center gap-1.5 transition-all retro-btn-active cursor-pointer"
+            className="flex-1 sm:flex-none justify-center bg-[#D91E2E] hover:bg-[#A91421] text-white font-bold text-xs px-5 py-2.5 rounded-md border-2 border-[#111111] retro-shadow-sm uppercase flex items-center gap-1.5 transition-all retro-btn-active cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5" />
             <span>Share</span>
@@ -80,11 +92,11 @@ export function LeaderboardCard({
         </div>
       </div>
 
-      {/* Right Decorative Illustration */}
-      <div className="flex-shrink-0 self-center sm:self-auto pr-2">
+      {/* Right Decorative Illustration (Desktop / Tablet) */}
+      <div className="hidden sm:flex flex-shrink-0 items-center justify-center pl-2">
         <IllustrationRenderer
           illustrationKey={leaderboard.illustration_key || 'cassette'}
-          className="w-24 h-18 sm:w-28 sm:h-20 transform hover:rotate-3 transition-transform"
+          className="w-24 h-18 sm:w-28 sm:h-20 object-contain transform hover:rotate-3 transition-transform"
         />
       </div>
     </div>
