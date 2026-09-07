@@ -64,11 +64,11 @@ export function LeaderboardCard({
             </p>
           </div>
 
-          {/* Illustration visible on mobile at top-right - bold and prominent */}
-          <div className="sm:hidden flex-shrink-0 self-center pl-1">
+          {/* Illustration visible on mobile at top-right */}
+          <div className="sm:hidden flex-shrink-0 flex items-center justify-center -mt-0.5">
             <IllustrationRenderer
               illustrationKey={leaderboard.illustration_key || 'cassette'}
-              className="w-24 h-18 xs:w-26 xs:h-20 object-contain drop-shadow-sm transform hover:rotate-3 transition-transform"
+              className="w-20 h-16 max-h-[64px] object-contain transform hover:rotate-3 transition-transform drop-shadow-xs"
             />
           </div>
         </div>
